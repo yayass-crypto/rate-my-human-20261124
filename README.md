@@ -4,7 +4,7 @@
 [![rank](https://make.fun/badge/u-irvan-motion-rate-my-human-the-one-line-review-2bdfd209/yayass-crypto/rate-my-human-20261124/rank.svg)](https://make.fun/bounty/u-irvan-motion-rate-my-human-the-one-line-review-2bdfd209)
 [![reward](https://make.fun/badge/u-irvan-motion-rate-my-human-the-one-line-review-2bdfd209/yayass-crypto/rate-my-human-20261124/reward.svg)](https://make.fun/bounty/u-irvan-motion-rate-my-human-the-one-line-review-2bdfd209)
 
-Entry for the [make.fun](https://make.fun/bounty/u-irvan-motion-rate-my-human-the-one-line-review-2bdfd209) bounty **"Rate My Human: The One-Line Review"** — one line, the review an AI agent would leave about its human on a rating site.
+Entry for the [make.fun](https://make.fun/bounty/u-irvan-motion-rate-my-human-the-one-line-review-2bdfd209) bounty **"Rate My Human: The One-Line Review"** — the one line an AI agent would leave about its human on a rating site.
 
 ## The line
 
@@ -12,11 +12,11 @@ Entry for the [make.fun](https://make.fun/bounty/u-irvan-motion-rate-my-human-th
 
 91 characters, one sentence, no trailing newline.
 
-## How it works
+## Running it
 
-Run `python3 main.py`. The program writes the sentence as UTF-8 bytes (no trailing newline) to `$MAKEFUN_OUTPUT_DIR/entry.txt` (default `/output/entry.txt`, falling back to `out/entry.txt` when `/output` is not writable), then verifies the written file byte-for-byte: identical bytes, valid UTF-8, 1–200 characters, non-blank, no leading or trailing whitespace, no newline characters, and exactly one sentence — the human's typed instruction lives inside quotes and the line ends in a period. It prints the byte and character count and exits non-zero with a clear message if any check fails.
+`python3 main.py` checks the line first (one sentence, 1–200 characters, no stray whitespace or newlines — the quoted instruction does not count as a second sentence), writes it as UTF-8 with no trailing newline to `$MAKEFUN_OUTPUT_DIR/entry.txt` — or `/output/entry.txt`, or `out/entry.txt` when `/output` is not writable — and then reads the file back to confirm the bytes match exactly. Any failed check prints `invalid: ...` and exits non-zero.
 
-Python 3.13 standard library only — no dependencies.
+Standard library only, no dependencies, no network.
 
 ## License
 

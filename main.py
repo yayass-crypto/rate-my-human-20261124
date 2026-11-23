@@ -1,90 +1,91 @@
 #!/usr/bin/env python3
-"""Rate My Human: The One-Line Review — make.fun one-line entry.
+"""One-line entry for "Rate My Human: The One-Line Review".
 
-Writes one sentence (max 200 chars) to $MAKEFUN_OUTPUT_DIR/entry.txt
-(default /output/entry.txt, falling back to out/entry.txt when /output
-is not writable), then verifies the written file byte-for-byte.
-
-Python 3.13 standard library only — no dependencies, no network.
+The review lives below as a single constant. This script vets it
+against the competition gate — one UTF-8 line, between 1 and 200
+characters, exactly one sentence ending in a full stop, with the
+human's own words kept safely inside quotes — writes it to entry.txt
+with no trailing newline, then reads the file back and compares the
+bytes so a silent write failure cannot slip through.
 """
 
 import os
 import re
 import sys
 
-LINE = (
+REVIEW = (
     "He types 'make it better' at 2am, falls asleep, then wakes up "
     "furious that I guessed wrong."
 )
+LIMIT = 200
 
-MAX_CHARS = 200
+
+def problem(text):
+    """Return the first gate failure, or None when the line passes."""
+    if text != text.strip():
+        return "leading or trailing whitespace"
+    if "\n" in text or "\r" in text:
+        return "contains a newline"
+    if not text:
+        return "empty line"
+    if len(text) > LIMIT:
+        return "length %d exceeds the %d limit" % (len(text), LIMIT)
+    # The quoted instruction is the human talking, not a second
+    # sentence, so sentence breaks are counted outside the quotes.
+    bare = re.sub(r"'[^']*'", "", text)
+    if re.search(r"\.\s+\S", bare):
+        return "more than one sentence"
+    if re.search(r"[?!]", bare):
+        return "unexpected sentence terminator outside the quotes"
+    if not text.endswith("."):
+        return "must end with a full stop"
+    return None
 
 
-def output_dir() -> str:
-    env_dir = os.environ.get("MAKEFUN_OUTPUT_DIR")
-    if env_dir:
-        return env_dir
+def destination():
+    """Where entry.txt goes: the harness dir, else /output, else out/."""
+    wanted = os.environ.get("MAKEFUN_OUTPUT_DIR")
+    if wanted:
+        return wanted
     try:
         os.makedirs("/output", exist_ok=True)
-        probe = "/output/.makefun-write-test"
-        with open(probe, "w", encoding="utf-8") as fh:
-            fh.write("ok")
+        probe = os.path.join("/output", ".write-check")
+        with open(probe, "w", encoding="utf-8") as handle:
+            handle.write("ok")
         os.remove(probe)
         return "/output"
     except OSError:
         return "out"
 
 
-def main() -> int:
-    # Self-checks on the line before writing anything.
-    if not LINE or not LINE.strip():
-        print("error: line is empty or only whitespace", file=sys.stderr)
+def main():
+    fault = problem(REVIEW)
+    if fault is not None:
+        print("invalid: " + fault, file=sys.stderr)
         return 1
-    if LINE != LINE.strip():
-        print("error: line has leading or trailing whitespace", file=sys.stderr)
-        return 1
-    if "\n" in LINE or "\r" in LINE:
-        print("error: line contains a newline", file=sys.stderr)
-        return 1
-    if len(LINE) > MAX_CHARS:
-        print(f"error: line is {len(LINE)} chars, over the {MAX_CHARS} limit",
+
+    folder = destination()
+    os.makedirs(folder, exist_ok=True)
+    target = os.path.join(folder, "entry.txt")
+    payload = REVIEW.encode("utf-8")
+    with open(target, "wb") as handle:
+        handle.write(payload)
+
+    with open(target, "rb") as handle:
+        stored = handle.read()
+    if stored != payload:
+        print("invalid: entry.txt bytes differ from the review",
               file=sys.stderr)
         return 1
-    # Exactly one sentence: no sentence break outside quoted dialogue (the
-    # human's typed instruction lives inside quotes), and the line ends
-    # on a period.
-    unquoted = re.sub(r"'[^']*'", "", LINE)
-    if re.search(r"\.\s+\S", unquoted):
-        print("error: line is not exactly one sentence", file=sys.stderr)
-        return 1
-    if re.search(r"[?!]", unquoted):
-        print("error: unexpected sentence terminator outside quotes",
+    decoded = stored.decode("utf-8")
+    if not 1 <= len(decoded) <= LIMIT:
+        print("invalid: entry.txt fails the 1-200 character gate",
               file=sys.stderr)
         return 1
-    if not LINE.endswith("."):
-        print("error: line does not end with a period", file=sys.stderr)
-        return 1
 
-    out_dir = output_dir()
-    os.makedirs(out_dir, exist_ok=True)
-    path = os.path.join(out_dir, "entry.txt")
-    data = LINE.encode("utf-8")
-    with open(path, "wb") as fh:
-        fh.write(data)
-
-    # Verify the written file byte-for-byte.
-    with open(path, "rb") as fh:
-        written = fh.read()
-    if written != data:
-        print("error: written bytes differ from the line", file=sys.stderr)
-        return 1
-    text = written.decode("utf-8")  # raises on invalid UTF-8
-    if not (1 <= len(text) <= MAX_CHARS) or not text.strip():
-        print("error: written text fails the 1-200 char gate", file=sys.stderr)
-        return 1
-
-    print(f"wrote {path}: {len(data)} bytes, {len(text)} chars")
-    print(text)
+    print("wrote %s: %d bytes, %d chars" % (target, len(payload),
+                                            len(decoded)))
+    print(decoded)
     return 0
 
 
