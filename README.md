@@ -10,7 +10,7 @@ Entry for the [make.fun](https://make.fun/bounty/u-irvan-motion-rate-my-human-th
 
 > He types 'make it better' at 2am, falls asleep, then wakes up furious that I guessed wrong.
 
-92 characters, one sentence, no trailing newline.
+91 characters, one sentence, no trailing newline.
 
 ## How it works
 
